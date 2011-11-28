@@ -25,6 +25,7 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option('--language', action='append', dest='languages', help='Give the languages'),
         make_option('--all', action='store_true', dest='all_templates', help='Compile all templates (instead of only the changed)'),
+        make_option('--single-template', action='append', dest='single_template', help='Compile only this template'),
         make_option('--boring', action='store_true', dest='boring', help='No colors in output'),
         make_option('--noinput', action='store_false', dest='interactive', default=True,
                         help='Tell Django to NOT prompt the user for input of any kind.'),
@@ -81,6 +82,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         all_templates = options['all_templates']
+        single_template = options['single_template']
         interactive = options['interactive']
         self.insert_debug_symbols = options['insert_debug_symbols']
 
@@ -126,7 +128,7 @@ class Command(BaseCommand):
                             os.remove(path)
 
         # Build compile queue
-        queue = self._build_compile_queue(options['languages'], all_templates)
+        queue = self._build_compile_queue(options['languages'], all_templates, single_template)
 
         # Precompile command
         execute_precompile_command()
@@ -165,8 +167,7 @@ class Command(BaseCommand):
         # Ring bell :)
         print '\x07'
 
-
-    def _build_compile_queue(self, languages, all_templates=True):
+    def _build_compile_queue(self, languages, all_templates=True, single_template=None):
         """
         Build a list of all the templates to be compiled.
         """
@@ -187,14 +188,22 @@ class Command(BaseCommand):
                         # We are compiling *everything*
                         all_templates or
 
-                        # Compiled file does not exist
-                        not os.path.exists(output_path) or
+                        # Or this is the only template that we want to compile
+                        (single_template and t == single_template) or
 
-                        # Compiled file has been marked for recompilation
-                        os.path.exists(output_path + '-c-recompile') or
+                        # Or we are compiling changed files
+                        (not single_template and (
 
-                        # Compiled file is outdated
-                        os.path.getmtime(output_path) < os.path.getmtime(input_path)):
+                            # Compiled file does not exist
+                            not os.path.exists(output_path) or
+
+                            # Compiled file has been marked for recompilation
+                            os.path.exists(output_path + '-c-recompile') or
+
+                            # Compiled file is outdated
+                            os.path.getmtime(output_path) < os.path.getmtime(input_path))
+
+                        )):
 
                     queue.add( (lang, t, input_path, output_path) )
 
