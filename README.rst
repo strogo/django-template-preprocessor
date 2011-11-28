@@ -85,7 +85,7 @@ specific options. Add the following to your settings.py
     # Enabled modules of the template preprocessor
     TEMPLATE_PREPROCESSOR_OPTIONS = {
             # Default settings
-            '*', ('html', 'whitespace-compression', ),
+            '*': ('html', 'whitespace-compression', ),
 
             # Override for specific applications
             ('django.contrib.admin', 'django.contrib.admindocs', 'debug_toolbar'): ('no-html',),
