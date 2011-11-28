@@ -205,7 +205,8 @@ class JavascriptVariable(JavascriptNode):
         self.__link_to = None
 
     def link_to_variable(self, variable):
-        self.__link_to = variable
+        if variable != self:
+            self.__link_to = variable
 
     def has_been_linked(self):
         return bool(self.__link_to)
@@ -351,6 +352,20 @@ def _minify_variable_names(js_node):
     """
     global_variable_names = []
 
+    def add_var_to_scope(scope, var):
+        """
+        Add variable "var" to this scope.
+        """
+        if var.varname in scope.symbol_table:
+            # Another variable with the same name was already declared into
+            # this scope. Link to each other. They can, and should remain the
+            # same name.
+            # E.g. as in:    "function(a) { var a; }"
+            var.link_to_variable(scope.symbol_table[var.varname])
+        else:
+            # Save variable into this scope
+            scope.symbol_table[var.varname] = var
+
     # Walk through all the JavascriptScope elements in the tree.
     # Detect variable declaration (variables preceded by a 'function' or 'var'
     # keyword.  Save in the scope that it declares a variable with that name.
@@ -372,7 +387,7 @@ def _minify_variable_names(js_node):
                         find_variables_in_function_parameter_list(children[index:])
 
                 elif isinstance(c, JavascriptVariable) and next_is_variable:
-                    scope.symbol_table[c.varname] = c
+                    add_var_to_scope(scope, c)
                     next_is_variable = False
 
                 elif isinstance(c, JavascriptScope):
@@ -436,7 +451,7 @@ def _minify_variable_names(js_node):
             # Following should be a '{', and bind found variables to scope
             if isinstance(nodelist[i], JavascriptScope):
                 for v in variables:
-                    nodelist[i].symbol_table[v.varname] = v
+                    add_var_to_scope(nodelist[i], v)
             else:
                 raise CompileException(nodelist[i], 'Expected "{" after function definition')
         else:
