@@ -27,6 +27,7 @@ different languages.
 
 from template_preprocessor.core.lexer import State, StartToken, Push, Record, Shift, StopToken, Pop, CompileException, Token, Error
 
+import codecs
 
 # Pseudo code:
 #
@@ -75,8 +76,11 @@ def tokenize(tree, states, classes_to_replace_by_parsed_content, classes_to_ente
             input_nodes = input_nodes[1:]
 
             if isinstance(current_input_node, basestring):
-                # Tokenize DjangoContent
-                string = current_input_node #.get_string_value()
+                # Tokenize content
+                string = current_input_node
+
+                # When the string starts with a BOM_UTF8 character, remove it.
+                string = string.lstrip(unicode(codecs.BOM_UTF8, 'utf8'))
 
                 # We want the regex to be able to match as much as possible,
                 # So, if several basestring nodes, are following each other,
@@ -145,7 +149,7 @@ def tokenize(tree, states, classes_to_replace_by_parsed_content, classes_to_ente
 
                                 elif isinstance(action, Error):
                                     raise CompileException(line, column, path, action.message +
-                                                "; near: '%s'" % string[position-20:position+20])
+                                                "; near: '%s'" % string[max(0,position-20):position+20])
 
                             break # Out of for
 
