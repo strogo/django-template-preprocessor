@@ -214,7 +214,7 @@ class Command(BaseCommand):
                         all_templates or
 
                         # Or this is the only template that we want to compile
-                        (single_template and t == single_template) or
+                        (single_template and t in single_template) or
 
                         # Or we are compiling changed files
                         (not single_template and (
