@@ -166,7 +166,7 @@ def _rewrite_urls(css_node, base_url):
 
     directory = os.path.dirname(base_url)
 
-    for url_node in css_node.child_nodes_of_class([ CssUrl ]):
+    for url_node in css_node.child_nodes_of_class(CssUrl):
         if not is_absolute_url(url_node.url):
             url_node.url = os.path.normpath(os.path.join(directory, url_node.url))
 
@@ -174,7 +174,7 @@ def _rewrite_urls(css_node, base_url):
     # media urls. We cannot use settings.MEDIA_URL/STATIC_URL in external css
     # files, and therefore we simply write /media or /static.
     from template_preprocessor.core.utils import real_url
-    for url_node in css_node.child_nodes_of_class([ CssUrl ]):
+    for url_node in css_node.child_nodes_of_class(CssUrl):
         url_node.url = real_url(url_node.url)
 
 
@@ -202,7 +202,7 @@ def compile_css(css_node, context):
     - Remove whitespace where possible.
     """
     #_remove_multiline_js_comments(js_node)
-    tokenize(css_node, __CSS_STATES, [HtmlNode], [DjangoContainer])
+    tokenize(css_node, __CSS_STATES, HtmlNode, DjangoContainer)
     _add_css_parser_extensions(css_node)
 
     # Remove meaningless whitespace in javascript code.
@@ -218,7 +218,7 @@ def compile_css_string(css_string, context, path='', url=None):
     tree.children = [ css_string ]
 
     # Tokenize
-    tokenize(tree, __CSS_STATES, [Token] )
+    tokenize(tree, __CSS_STATES, Token)
     _add_css_parser_extensions(tree)
 
     # Rewrite url() in external css files

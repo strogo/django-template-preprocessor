@@ -51,7 +51,6 @@ def get_media_source_from_url(url):
     elif STATIC_URL and url.startswith('/static/'):
         return find(url[len('/static/'):].lstrip('/'))
 
-
     # External URLs
     elif is_remote_url(url):
         return url

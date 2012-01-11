@@ -148,7 +148,7 @@ class JavascriptParentheses(JavascriptNode):
 
     @property
     def contains_django_tags(self):
-        return any(self.child_nodes_of_class([DjangoTag]))
+        return any(self.child_nodes_of_class(DjangoTag))
 
 
 class JavascriptSquareBrackets(JavascriptNode):
@@ -246,7 +246,7 @@ class JavascriptString(JavascriptNode):
 
     @property
     def contains_django_tags(self):
-        return any(self.child_nodes_of_class([DjangoTag]))
+        return any(self.child_nodes_of_class(DjangoTag))
 
     def output(self, handler):
         raise Exception("Don't call output on abstract base class")
@@ -560,7 +560,7 @@ def fix_whitespace_bug(js_node):
     would make Django think it's the start of a variable.
     """
     # For every scope (starting with '{')
-    for scope in js_node.child_nodes_of_class([JavascriptScope]):
+    for scope in js_node.child_nodes_of_class(JavascriptScope):
         # Look if the first child inside this scope also renders to a '{'
         if scope.children and scope.children[0].output_as_string()[0:1] == '{':
             # If so, insert a whitespace token in between.
@@ -578,7 +578,7 @@ def _validate_javascript(js_node):
     """
     # Check whether no comma appears at the end of any scope.
     # e.g.    var x = { y: z, } // causes problems in IE6 and IE7
-    for scope in js_node.child_nodes_of_class([JavascriptScope]):
+    for scope in js_node.child_nodes_of_class(JavascriptScope):
         if scope.children:
             last_child = scope.children[-1]
             if isinstance(last_child, JavascriptOperator) and last_child.is_comma:
@@ -590,7 +590,7 @@ def _validate_javascript(js_node):
     # this. If semicolons are missing, we consider the code invalid.  Every
     # statement should end with a semi colon, except: for, function, if,
     # switch, try and while (See JSlint.com)
-    for scope in [js_node] + list(js_node.child_nodes_of_class([JavascriptScope])):
+    for scope in [js_node] + list(js_node.child_nodes_of_class(JavascriptScope)):
         i = [0] # Variable by referece
 
         def next():
@@ -720,7 +720,7 @@ def _process_gettext(js_node, context, validate_only=False):
     Validate whether gettext(...) function in javascript get a string as
     parameter. (Or concatenation of several strings)
     """
-    for scope in js_node.child_nodes_of_class([JavascriptScope, JavascriptSquareBrackets, JavascriptParentheses]):
+    for scope in js_node.child_nodes_of_class((JavascriptScope, JavascriptSquareBrackets, JavascriptParentheses)):
         nodes = scope.children
         for i, c in enumerate(nodes):
             # Is this a gettext method?
@@ -780,7 +780,7 @@ def compile_javascript(js_node, context):
     nodes.
     """
     # Tokenize and compile
-    tokenize(js_node, __JS_STATES, [HtmlContent], [DjangoContainer])
+    tokenize(js_node, __JS_STATES, HtmlContent, DjangoContainer)
     _compile(js_node, context)
 
 
@@ -793,7 +793,7 @@ def compile_javascript_string(js_string, context, path=''):
     tree.children = [ js_string ]
 
     # Tokenize
-    tokenize(tree, __JS_STATES, [Token] )
+    tokenize(tree, __JS_STATES, Token)
 
     # Compile
     _compile(tree, context)

@@ -80,7 +80,32 @@ class Command(BaseCommand):
         else:
             return termcolor.colored(text, *args, **kwargs)
 
+
+
     def handle(self, *args, **options):
+        self.real_handle(*args, **options)
+        return
+
+
+        import os, sys
+        import StringIO
+        import hotshot, hotshot.stats
+        f = '/tmp/django-profile'
+        prof = hotshot.Profile(f)
+        prof.runcall(self.real_handle, *args, **options)
+
+        prof.close()
+        stats = hotshot.stats.load(f)
+        #stats.strip_dirs()
+        stats.sort_stats('time')
+        stats.print_stats(1.0)
+        os.remove(f)
+
+
+
+
+
+    def real_handle(self, *args, **options):
         all_templates = options['all_templates']
         single_template = options['single_template']
         interactive = options['interactive']
@@ -189,7 +214,7 @@ class Command(BaseCommand):
                         all_templates or
 
                         # Or this is the only template that we want to compile
-                        (single_template and t == single_template) or
+                        (single_template and t in single_template) or
 
                         # Or we are compiling changed files
                         (not single_template and (

@@ -18,7 +18,7 @@ __author__ = 'Jonathan Slenders, City Live'
 __all__ = ('lex', 'Token')
 
 import re
-import itertools
+from itertools import chain, ifilter
 
 
 class CompileException(Exception):
@@ -72,28 +72,30 @@ class Token(object):
         """
         yield self.children
 
-        i = 2
-        while hasattr(self, 'children%i' % i):
-            yield getattr(self, 'children%i' % i)
-            i += 1
+        try:
+            yield self.children2
+            yield self.children3
+            yield self.children4
+        except AttributeError:
+            pass
+
+        # Alternatively, we could write the following as well, but
+        # the above is slightly faster.
+
+        # i = 2
+        # while hasattr(self, 'children%i' % i):
+        #     yield getattr(self, 'children%i' % i)
+        #     i += 1
 
     @property
     def all_children(self):
-        return list(itertools.chain(* list(self.children_lists)))
+        return chain(* self.children_lists)
 
     def get_childnodes_with_name(self, name):
         for children in self.children_lists:
             for c in children:
                 if c.name == name:
                     yield c
-
-    def is_i(self, class_):
-        """
-        node.is(TokenClass)
-        is synonym for:
-        isinstance(node, TokenClass)
-        """
-        return isinstance(self, class_)
 
     def _print(self, prefix=''):
         """
@@ -125,52 +127,39 @@ class Token(object):
         To be overriden in the parse tree. (an override can output additional information.)
         """
         for children in self.children_lists:
-            for c in children:
-                handler(c)
+            map(handler, children)
 
     def _output(self, handler):
         """
         Original output method.
         """
         for children in self.children_lists:
-            for c in children:
-                handler(c)
+            map(handler, children)
 
-    def output_as_string(self, use_original_output_method=False, hook_dict=None):
+    def output_as_string(self, use_original_output_method=False):
         """
         Return a unicode string of this node
-        The `hook_dict` parameter can be used to override the output behaviour of
-        certain classes, and insert own output hooks instead.
-        !! Ensure that the classes in hook_dict have no parent/child relationship,
-           every isinstance match will be called.
         """
-        hook_dict = hook_dict or { }
         o = []
-        def capture(s):
-            if any(isinstance(s, k) for k in hook_dict):
-                for k in hook_dict:
-                    if isinstance(s, k):
-                        o.append(hook_dict[k](s))
-
-            elif isinstance(s, basestring):
-                o.append(s)
-
-            elif use_original_output_method:
-                s._output(capture)
-
-            else:
-                s.output(capture)
-
         if use_original_output_method:
+            def capture(s):
+                if isinstance(s, basestring):
+                    o.append(s)
+                else:
+                    s._output(capture)
             self._output(capture)
         else:
+            def capture(s):
+                if isinstance(s, basestring):
+                    o.append(s)
+                else:
+                    s.output(capture)
             self.output(capture)
 
         return u''.join(o)
 
     def output_params(self, handler):
-        for c in self.params:
-            handler(c)
+        map(handler, self.params)
 
     def __unicode__(self):
         """ Just for debugging the parser """
@@ -181,32 +170,48 @@ class Token(object):
     def child_nodes_of_class(self, classes, dont_enter=None):
         """
         Iterate through all nodes of this class type.
+        `classes` and `dont_enter` should be a single Class, or a tuple of classes.
         (I think it's a depth-first implementation.)
-        `dont_enter` parameter can receive a list of
+        `dont_enter` parameter can receive a list of node classes to
+        be excluded for searching.
         """
-        for children in self.children_lists:
-            for c in children:
-                if any([ isinstance(c, t) for t in classes ]):
-                    yield c
+                    # TODO: this is a hard limit to 3 child nodes, (better for performance but not optimal)
+        for c in chain(self.children, getattr(self, 'children2', []), getattr(self, 'children3', [])):
+            if isinstance(c, classes):
+                yield c
 
-                if isinstance(c, Token):
-                    if not any([isinstance(c, t) for t in dont_enter or [] ]):
-                        for i in c.child_nodes_of_class(classes, dont_enter):
-                            yield i
+            if isinstance(c, Token):
+                if not dont_enter:
+                    for i in c.child_nodes_of_class(classes):
+                        yield i
 
-    def remove_child_nodes_of_class(self, class_, except_nodes=None):
+                elif not isinstance(c, dont_enter):
+                    for i in c.child_nodes_of_class(classes, dont_enter):
+                        yield i
+
+    def has_child_nodes_of_class(self, classes, dont_enter=None):
+        """
+        Return True when at least one childnode of this class is found.
+        """
+        iterator = self.child_nodes_of_class(classes, dont_enter)
+        try:
+            iterator.next()
+            return True
+        except StopIteration:
+            return False
+
+
+    def remove_child_nodes_of_class(self, class_):
         """
         Iterate recursively through the parse tree,
         and remove nodes of this class.
         """
-        except_nodes = except_nodes or []
-
         for children in self.children_lists:
-            for c in children[:]:
-                if isinstance(c, class_) and not c in except_nodes:
+            for c in children:
+                if isinstance(c, class_):
                     children.remove(c)
 
-                if isinstance(c, Token):
+                elif isinstance(c, Token):
                     c.remove_child_nodes_of_class(class_)
 
     def remove_child_nodes(self, nodes):
@@ -214,10 +219,13 @@ class Token(object):
         Removed these nodes from the tree.
         """
         for children in self.children_lists:
-            for c in children[:]:
-                if c in nodes:
+            # Remove nodes from this children
+            for c in nodes:
+                if c in children:
                     children.remove(c)
 
+            # Recursively remove children from child tokens.
+            for c in children:
                 if isinstance(c, Token):
                     c.remove_child_nodes(nodes)
 

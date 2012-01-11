@@ -276,7 +276,7 @@ class HtmlTag(HtmlNode):
     def html_attributes(self):
         attributes = {}
 
-        for a in self.child_nodes_of_class([ HtmlTagAttribute ]):
+        for a in self.child_nodes_of_class(HtmlTagAttribute):
             attributes[a.attribute_name] = a.attribute_value
 
         return attributes
@@ -319,7 +319,7 @@ class HtmlTag(HtmlNode):
         Replace attribute and add double quotes.
         """
         # Delete attributes having this name
-        for a in self.child_nodes_of_class([ HtmlTagAttribute ]):
+        for a in self.child_nodes_of_class(HtmlTagAttribute):
             if a.attribute_name == name:
                 self.remove_child_nodes([ a ])
 
@@ -405,7 +405,7 @@ class HtmlTagAttribute(HtmlNode):
         Return attribute name
         (Result is a string)
         """
-        key = list(self.child_nodes_of_class([ HtmlTagAttributeName ]))[0]
+        key = self.child_nodes_of_class(HtmlTagAttributeName).next()
         key = key.output_as_string()
         return key.rstrip('=')
 
@@ -415,8 +415,10 @@ class HtmlTagAttribute(HtmlNode):
         Return attribute value, or None if none was given (value can be optional (HTML5))
         (result is nodes or None)
         """
-        val = list(self.child_nodes_of_class([ HtmlTagAttributeValue ]))
-        return val[0] if val else None
+        try:
+            return self.child_nodes_of_class(HtmlTagAttributeValue).next()
+        except StopIteration:
+            return None
 
 
 class HtmlTagPair(HtmlNode):
@@ -459,8 +461,8 @@ class HtmlScriptNode(HtmlNode):
         self.__attrs = { }
         for p in params:
             if isinstance(p, HtmlTagAttribute):
-                key = list(p.child_nodes_of_class([ HtmlTagAttributeName ]))[0]
-                val = list(p.child_nodes_of_class([ HtmlTagAttributeValue ]))[0]
+                key = p.child_nodes_of_class(HtmlTagAttributeName).next()
+                val = p.child_nodes_of_class(HtmlTagAttributeValue).next()
 
                 key = key.output_as_string()
                 val = val.output_as_string()
@@ -588,7 +590,7 @@ def _nest_elements(tree):
     block_elements1 = {
         'html-start-conditional-comment': ('html-end-conditional-comment', HtmlConditionalComment),
     }
-    nest_block_level_elements(tree, block_elements1, [Token], lambda c: c.name)
+    nest_block_level_elements(tree, block_elements1, Token, lambda c: c.name)
 
     # Read as: move the content between:
         # element of this class, with this html_tagname, and
@@ -601,7 +603,7 @@ def _nest_elements(tree):
         (False, HtmlTag, 'textarea'): ((False, HtmlEndTag, 'textarea'),  HtmlTextareaNode),
     }
 
-    nest_block_level_elements(tree, block_elements2, [HtmlTag, HtmlEndTag],
+    nest_block_level_elements(tree, block_elements2, (HtmlTag, HtmlEndTag),
             lambda c: (c.is_closing_html_tag, c.__class__, c.html_tagname) )
 
 
@@ -650,8 +652,7 @@ def _merge_content_nodes(tree, context):
     # Concatenate nodes
     if context.insert_debug_symbols:
         # In debug mode: only inside script/style nodes
-        for n in tree.child_nodes_of_class([ HtmlStyleNode, HtmlScriptNode ]):
-            apply(n)
+        map(apply, tree.child_nodes_of_class((HtmlStyleNode, HtmlScriptNode)))
     else:
         apply(tree)
 
@@ -713,15 +714,15 @@ def _remove_empty_class_attributes(tree):
     remove the attribute.
     """
     # For every HTML tag
-    for tag in tree.child_nodes_of_class([ HtmlTag ]):
-        for a in tag.child_nodes_of_class([ HtmlTagAttribute ]):
+    for tag in tree.child_nodes_of_class(HtmlTag):
+        for a in tag.child_nodes_of_class(HtmlTagAttribute):
             if a.attribute_name == 'class' and a.attribute_value.output_as_string() in ('', '""', "''"):
                 tag.children.remove(a)
 
 
 def _turn_comments_to_content_in_js_and_css(tree):
-    for c in tree.child_nodes_of_class([ HtmlStyleNode, HtmlScriptNode ]):
-        for c2 in c.child_nodes_of_class([ HtmlCDATA, HtmlComment ]):
+    for c in tree.child_nodes_of_class((HtmlStyleNode, HtmlScriptNode)):
+        for c2 in c.child_nodes_of_class((HtmlCDATA, HtmlComment)):
             c2.__class__ = HtmlContent
 
 
@@ -729,12 +730,12 @@ def _remove_comments(tree):
     tree.remove_child_nodes_of_class(HtmlComment)
 
 
-def _merge_nodes_of_type(tree, type, dont_enter):
+def _merge_nodes_of_type(tree, type_, dont_enter):
     """
     Merge nodes of this type into one node.
     """
     # Find all internal js nodes
-    js_nodes = [ j for j in tree.child_nodes_of_class([type], dont_enter=dont_enter) if not j.is_external ]
+    js_nodes = [ j for j in tree.child_nodes_of_class(type_, dont_enter=dont_enter) if not j.is_external ]
 
     if js_nodes:
         first = js_nodes[0]
@@ -755,7 +756,7 @@ def _validate_html_tags(tree):
     """
     Check whether all HTML tags exist.
     """
-    for tag in tree.child_nodes_of_class([ HtmlTag ]):
+    for tag in tree.child_nodes_of_class(HtmlTag):
         if tag.html_tagname not in __ALL_HTML_TAGS:
             # Ignore html tags in other namespaces:
             # (Like e.g. <x:tagname />, <fb:like .../>)
@@ -767,17 +768,17 @@ def _validate_html_attributes(tree):
     """
     Check whether HTML tags have no invalid or double attributes.
     """
-    for tag in tree.child_nodes_of_class([ HtmlTag ]):
+    for tag in tree.child_nodes_of_class(HtmlTag):
         # Ignore tags from other namespaces.
         if not ':' in tag.html_tagname:
             # Check for double attributes
             attr_list=[]
 
-            if not len(list(tag.child_nodes_of_class([ DjangoTag ]))):
+            if not tag.has_child_nodes_of_class(DjangoTag):
                 # TODO XXX:  {% if ... %} ... {% endif %} are not yet groupped in an DjangoIfNode, which means
                 # that the content of the if-block is still a child of the parent. For now, we simply
                 # don't check in these cases.
-                for a in tag.child_nodes_of_class([ HtmlTagAttribute ], dont_enter=[ DjangoTag ]):
+                for a in tag.child_nodes_of_class(HtmlTagAttribute, dont_enter=DjangoTag):
                     if a.attribute_name in attr_list:
                         raise CompileException(tag, 'Attribute "%s" defined more than once for <%s> tag' %
                                         (a.attribute_name, tag.html_tagname))
@@ -803,7 +804,7 @@ def _ensure_type_in_scripts(tree):
     """
     <script> should have type="text/javascript"
     """
-    for tag in tree.child_nodes_of_class([ HtmlTag ]):
+    for tag in tree.child_nodes_of_class(HtmlTag):
         if tag.html_tagname == 'script':
             type_ = tag.html_attributes.get('type', None)
             if not bool(type_) or not type_.output_as_string() == u'"text/javascript"':
@@ -814,7 +815,7 @@ def _ensure_type_in_css(tree):
     """
     <style> should have type="text/css"
     """
-    for tag in tree.child_nodes_of_class([ HtmlTag ]):
+    for tag in tree.child_nodes_of_class(HtmlTag):
         if tag.html_tagname == 'style':
             type_ = tag.html_attributes.get('type', None)
             if not bool(type_) or not type_.output_as_string() == u'"text/css"':
@@ -825,7 +826,7 @@ def _ensure_href_in_hyperlinks(tree):
     """
     Throw error if no href found in hyperlinks.
     """
-    for tag in tree.child_nodes_of_class([ HtmlTag ]):
+    for tag in tree.child_nodes_of_class(HtmlTag):
         if tag.html_tagname == 'a':
             href = tag.html_attributes.get('href', None)
             if href:
@@ -845,7 +846,7 @@ def _ensure_alt_attribute(tree):
     """
     For every image, check if alt attribute exists missing.
     """
-    for tag in tree.child_nodes_of_class([ HtmlTag ]):
+    for tag in tree.child_nodes_of_class(HtmlTag):
         if tag.html_tagname == 'img':
             if not tag.html_attributes.get('alt', None):
                 raise CompileException(tag, 'alt-attribute required for image')
@@ -900,7 +901,7 @@ def _nest_all_elements(tree):
     for t in __ALL_HTML_TAGS:
         block_elements2[(False, HtmlTag, t)] = ((False, HtmlEndTag, t), _create_html_tag_node(t))
 
-    nest_block_level_elements(tree, block_elements2, [HtmlTag, HtmlEndTag],
+    nest_block_level_elements(tree, block_elements2, (HtmlTag, HtmlEndTag),
             lambda c: (c.is_closing_html_tag, c.__class__, c.html_tagname) )
 
 
@@ -930,7 +931,7 @@ def _check_no_block_level_html_in_inline_html(tree, options):
 
 
 def _check_for_unmatched_closing_html_tags(tree):
-    for tag in tree.child_nodes_of_class([ HtmlEndTag ]):
+    for tag in tree.child_nodes_of_class(HtmlEndTag):
         # NOTE: end tags may still exist for unknown namespaces because the
         #       current implementation does not yet combile unknown start and
         #       end tags.
@@ -971,12 +972,12 @@ def _pack_external_javascript(tree, context):
     Pack external javascript code. (between {% compress %} and {% endcompress %})
     """
     # For each {% compress %}
-    for compress_tag in tree.child_nodes_of_class([ DjangoCompressTag ]):
+    for compress_tag in tree.child_nodes_of_class(DjangoCompressTag):
         # Respect the order of the scripts
         scripts_in_pack = []
 
         # Find each external <script /> starting with the MEDIA_URL or STATIC_URL
-        for script in compress_tag.child_nodes_of_class([ HtmlScriptNode ]):
+        for script in compress_tag.child_nodes_of_class(HtmlScriptNode):
             if script.is_external:
                 source = script.script_source
                 if ((MEDIA_URL and source.startswith(MEDIA_URL)) or
@@ -995,7 +996,7 @@ def _pack_external_javascript(tree, context):
             # Replace the first external script's url by this one.
             # Remove all other external script files
             first = True
-            for script in list(compress_tag.child_nodes_of_class([ HtmlScriptNode ])):
+            for script in list(compress_tag.child_nodes_of_class(HtmlScriptNode)):
                 # ! Note that we made a list of the child_nodes_of_class iterator,
                 #   this is required because we are removing childs from the list here.
                 if script.is_external:
@@ -1025,12 +1026,12 @@ def _pack_external_css(tree, context):
                 tag.get_html_attribute_value_as_string('rel') == 'stylesheet'
 
     # For each {% compress %}
-    for compress_tag in tree.child_nodes_of_class([ DjangoCompressTag ]):
+    for compress_tag in tree.child_nodes_of_class(DjangoCompressTag):
         # Respect the order of the links
         css_in_pack = []
 
         # Find each external <link type="text/css" /> starting with the MEDIA_URL
-        for tag in compress_tag.child_nodes_of_class([ HtmlTag ]):
+        for tag in compress_tag.child_nodes_of_class(HtmlTag):
             if is_external_css_tag(tag):
                 source = tag.get_html_attribute_value_as_string('href')
                 if ((MEDIA_URL and source.startswith(MEDIA_URL)) or
@@ -1086,7 +1087,7 @@ def _insert_debug_trace_nodes(tree, context):
     then we can insert debug symbols.
     """
     def insert_trace(cls, before_class, after_class):
-        for trans in tree.child_nodes_of_class([ cls ]):
+        for trans in tree.child_nodes_of_class(cls):
             trans_copy = deepcopy(trans)
 
             trans.children.insert(0, before_class(trans_copy))
@@ -1106,7 +1107,7 @@ def _insert_debug_symbols(tree, context):
     body_node = None
     head_node = None
 
-    for tag in tree.child_nodes_of_class([ HtmlTagPair ]):
+    for tag in tree.child_nodes_of_class(HtmlTagPair):
         if tag.html_tagname == 'body':
             body_node = tag
 
@@ -1118,7 +1119,7 @@ def _insert_debug_symbols(tree, context):
 
     def create_references():
         ref_counter = [0]
-        for tag in tree.child_nodes_of_class([ HtmlTagPair, HtmlTag ]):
+        for tag in tree.child_nodes_of_class((HtmlTagPair, HtmlTag)):
                 tag_references[tag] = ref_counter[0]
                 ref_counter[0] += 1
     create_references()
@@ -1138,7 +1139,7 @@ def _insert_debug_symbols(tree, context):
         # Therefor we add hooks for every tag, and replace it by pointers.
         apply_source_list = [] # (tag, source)
 
-        for tag in [body_node] + list(body_node.child_nodes_of_class([ HtmlTagPair, HtmlTag ])):
+        for tag in [body_node] + list(body_node.child_nodes_of_class((HtmlTagPair, HtmlTag))):
             def create_capture():
                 capture_output = []
 
@@ -1188,10 +1189,10 @@ def _insert_debug_symbols(tree, context):
         tag.set_html_attribute('d:l', tag.line)
         tag.set_html_attribute('d:c', tag.column)
 
-    for tag in tree.child_nodes_of_class([ HtmlTag ]):
+    for tag in tree.child_nodes_of_class(HtmlTag):
         add_template_info(tag)
 
-    for tag in tree.child_nodes_of_class([ HtmlTagPair ]):
+    for tag in tree.child_nodes_of_class(HtmlTagPair):
         add_template_info(tag.open_tag)
 
     # Surround every {% trans %} block which does not appear into Javascript or Css
@@ -1243,7 +1244,7 @@ def compile_html_string(html_string, path=''):
     tree.children = [ html_string ]
 
     # Tokenize
-    tokenize(tree, __HTML_STATES, [Token] )
+    tokenize(tree, __HTML_STATES, Token)
 
     from template_preprocessor.core.context import Context
     context = Context(path)
@@ -1262,7 +1263,7 @@ def compile_html(tree, context):
         _insert_debug_trace_nodes(tree, context)
 
     # Parse HTML code in parse tree (Note that we don't enter DjangoRawTag)
-    tokenize(tree, __HTML_STATES, [DjangoContent], [DjangoContainer ])
+    tokenize(tree, __HTML_STATES, DjangoContent, DjangoContainer)
     _process_html_tree(tree, context)
 
 
@@ -1331,7 +1332,7 @@ def _process_html_tree(tree, context):
 
     # Compile javascript
     if options.compile_javascript:
-        for js_node in tree.child_nodes_of_class([ HtmlScriptNode ]):
+        for js_node in tree.child_nodes_of_class(HtmlScriptNode):
             if not js_node.is_external:
                 #print 'compiling'
                 #print js_node._print()
@@ -1340,13 +1341,13 @@ def _process_html_tree(tree, context):
     # Compile CSS
     if options.compile_css:
         # Document-level CSS
-        for css_node in tree.child_nodes_of_class([ HtmlStyleNode ]):
+        for css_node in tree.child_nodes_of_class(HtmlStyleNode):
             compile_css(css_node, context)
 
         # In-line CSS.
             # TODO: this would work, if attribute_value didn't contain the attribute quotes.
         '''
-        for attr in tree.child_nodes_of_class([ HtmlTagAttribute ]):
+        for attr in tree.child_nodes_of_class(HtmlTagAttribute):
             if attr.attribute_name == 'style':
                 att.attribute_value = compile_css(attr.attribute_value)
         '''

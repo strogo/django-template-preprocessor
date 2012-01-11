@@ -27,6 +27,7 @@ different languages.
 
 from template_preprocessor.core.lexer import State, StartToken, Push, Record, Shift, StopToken, Pop, CompileException, Token, Error
 
+import codecs
 
 # Pseudo code:
 #
@@ -40,6 +41,8 @@ def tokenize(tree, states, classes_to_replace_by_parsed_content, classes_to_ente
     """
     Tokenize javascript or css code within the
     django parse tree.
+    `classes_to_replace_by_parsed_content` should be a single class or tuple of classes
+    `classes_to_enter` should be a single class or tuple of classes.
     """
     classes_to_enter = classes_to_enter or []
 
@@ -73,13 +76,16 @@ def tokenize(tree, states, classes_to_replace_by_parsed_content, classes_to_ente
             input_nodes = input_nodes[1:]
 
             if isinstance(current_input_node, basestring):
-                # Tokenize DjangoContent
-                string = current_input_node #.get_string_value()
+                # Tokenize content
+                string = current_input_node
+
+                # When the string starts with a BOM_UTF8 character, remove it.
+                string = string.lstrip(unicode(codecs.BOM_UTF8, 'utf8'))
 
                 # We want the regex to be able to match as much as possible,
                 # So, if several basestring nodes, are following each other,
                 # concatenate as one.
-                while (len(input_nodes) and isinstance(input_nodes[0], basestring)):
+                while len(input_nodes) and isinstance(input_nodes[0], basestring):
                     # Pop another input node
                     string = string + input_nodes[0]
                     input_nodes = input_nodes[1:]
@@ -143,19 +149,19 @@ def tokenize(tree, states, classes_to_replace_by_parsed_content, classes_to_ente
 
                                 elif isinstance(action, Error):
                                     raise CompileException(line, column, path, action.message +
-                                                "; near: '%s'" % string[position-20:position+20])
+                                                "; near: '%s'" % string[max(0,position-20):position+20])
 
                             break # Out of for
 
             # Not a DjangoContent node? Copy in current position.
             else:
                 # Recursively tokenize in this node (continue with states, token will be replaced by parsed content)
-                if any([isinstance(current_input_node, cls) for cls in classes_to_replace_by_parsed_content]):
+                if isinstance(current_input_node, classes_to_replace_by_parsed_content):
                     for l in current_input_node.children_lists:
                         _tokenize(current_input_node, l, state_stack, token_stack)
 
                 # Recursively tokenize in this node (start parsing again in nested node)
-                elif any([isinstance(current_input_node, cls) for cls in classes_to_enter]):
+                elif isinstance(current_input_node, classes_to_enter):
                     for l in current_input_node.children_lists:
                         _tokenize(current_input_node, l, state_stack, [ l ], True)
                     token_stack[-1].append(current_input_node)
@@ -171,7 +177,7 @@ def tokenize(tree, states, classes_to_replace_by_parsed_content, classes_to_ente
     _tokenize(tree, tree.children, ['root'], [ tree.children ], True)
 
 
-def nest_block_level_elements(tree, mappings, _classes=[Token], check=None):
+def nest_block_level_elements(tree, mappings, _classes=Token, check=None):
     """
     Replace consecutive nodes like  (BeginBlock, Content, Endblock) by
     a recursive structure:  (Block with nested Content).
@@ -179,6 +185,8 @@ def nest_block_level_elements(tree, mappings, _classes=[Token], check=None):
     Or also supported:  (BeginBlock, Content, ElseBlock Content EndBlock)
         After execution, the first content will be found in node.children,
         The second in node.children2
+
+    `_classes` should be a single Class or tuple of classes.
     """
     check = check or (lambda c: c.name)
 
@@ -207,7 +215,7 @@ def nest_block_level_elements(tree, mappings, _classes=[Token], check=None):
 
         for c in nodelist[:]:
             # The 'tags' are only concidered tags if they are of one of these classes
-            is_given_class = any([isinstance(c, cls) for cls in _classes])
+            is_given_class = isinstance(c, _classes)
 
             # And if it's a tag, this check_value is the once which could
             # match a value of the mapping.
