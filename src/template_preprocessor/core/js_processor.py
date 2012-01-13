@@ -23,6 +23,7 @@ from template_preprocessor.core.lexer_engine import tokenize
 from template_preprocessor.core.html_processor import HtmlContent
 import string
 from django.utils.translation import ugettext as _
+import gettext
 
 __JS_KEYWORDS = 'break|catch|const|continue|debugger|default|delete|do|else|enum|false|finally|for|function|gcase|if|new|null|return|switch|this|throw|true|try|typeof|var|void|while|with'.split('|')
 
@@ -114,6 +115,28 @@ __JS_STATES = {
             ),
    }
 
+
+# =========================[ I18n ]===========================
+
+from django.utils.translation import get_language
+translations = {}
+
+def translate_js(text):
+    # Get current language
+    lang = get_language()
+
+    # Load dictionary file
+    if lang not in translations:
+        try:
+            translations[lang] = gettext.translation('djangojs', 'locale', [ lang ]).gettext
+        except IOError as e:
+            # Fall back to identical translations, when no translation file
+            # has been found.
+            print e
+            translations[lang] = lambda t:t
+
+
+    return translations[lang](text)
 
 
 # =========================[ Javascript Parser ]===========================
@@ -756,7 +779,7 @@ def _process_gettext(js_node, context, validate_only=False):
 
                         if not validate_only:
                             # Translate content
-                            translation = _(body)
+                            translation = translate_js(body)
 
                             # Replace gettext(...) call by its translation (in double quotes.)
                             gettext.__class__ = JavascriptDoubleQuotedString
@@ -765,7 +788,6 @@ def _process_gettext(js_node, context, validate_only=False):
                 except IndexError, i:
                     # i got out of the nodes array
                     pass
-
 
 
 def compile_javascript(js_node, context):
