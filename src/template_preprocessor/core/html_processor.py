@@ -765,7 +765,7 @@ def _validate_html_tags(tree):
 
 def _validate_html_attributes(tree):
     """
-    Check whether HTML tags have no invalid or double attributes.
+    Check whether HTML tags have invalid or double attributes.
     """
     for tag in tree.child_nodes_of_class(HtmlTag):
         # Ignore tags from other namespaces.
@@ -773,11 +773,11 @@ def _validate_html_attributes(tree):
             # Check for double attributes
             attr_list=[]
 
-            if not tag.has_child_nodes_of_class(DjangoTag):
+            if not tag.has_child_nodes_of_class((DjangoTag, DjangoContainer)):
                 # TODO XXX:  {% if ... %} ... {% endif %} are not yet groupped in an DjangoIfNode, which means
                 # that the content of the if-block is still a child of the parent. For now, we simply
                 # don't check in these cases.
-                for a in tag.child_nodes_of_class(HtmlTagAttribute, dont_enter=DjangoTag):
+                for a in tag.child_nodes_of_class(HtmlTagAttribute, dont_enter=(DjangoTag, DjangoContainer)):
                     if a.attribute_name in attr_list:
                         raise CompileException(tag, 'Attribute "%s" defined more than once for <%s> tag' %
                                         (a.attribute_name, tag.html_tagname))
