@@ -75,11 +75,11 @@ __HTML_ATTRIBUTES = {
     'option': ('value', 'selected', ),
     'base': ('href', ),
     'object': ('data', 'type', 'width', 'height', 'quality', ),
-    'iframe': ('src', 'srcdoc', 'name', 'height', 'width', 'marginwidth', 'marginheight', 'scrolling', 'sandbox', 'seamless', 'frameborder', 'allowTransparency',),
+    'iframe': ('src', 'srcdoc', 'name', 'height', 'width', 'marginwidth', 'marginheight', 'scrolling', 'sandbox', 'seamless', 'frameborder', 'allowTransparency', 'webkitAllowFullScreen', 'allowFullScreen', 'mozallowfullscreen', ),
     'param': ('name', 'value', ),
     'table': ('cellpadding', 'cellspacing', 'summary', 'width', ),
     'p': ('align', ), # Deprecated
-    'embed': ('src', 'allowscriptaccess', 'height', 'width', 'allowfullscreen', 'type', ),
+    'embed': ('src', 'allowscriptaccess', 'allowScriptAccess', 'height', 'width', 'allowfullscreen', 'type', ),
     'video': ('audio', 'autoplay', 'controls', 'height', 'loop', 'poster', 'preload', 'src', 'width'),
 }
 
