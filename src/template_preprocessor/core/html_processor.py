@@ -49,7 +49,12 @@ __DEPRECATED_HTML_TAGS = ('i', 'b', 'u', 'tt', 'strike', )
 
 __HTML_ATTRIBUTES = {
     # Valid for every HTML tag
-    '_': ('accesskey', 'id', 'class', 'contenteditable', 'contextmenu', 'dir', 'draggable', 'dropzone', 'hidden', 'spellcheck', 'style', 'tabindex', 'lang', 'xmlns', 'title', 'xml:lang'),
+    '_': ('accesskey', 'id', 'class', 'contenteditable', 'contextmenu', 'dir', 'draggable', 'dropzone',
+        'hidden', 'spellcheck', 'style', 'tabindex', 'lang', 'xmlns', 'title', 'xml:lang',
+
+        # HTML 5
+        'itemscope', 'itemtype', 'itemprop', 'role',
+        ),
 
     # Attributes for specific HTML tags
 
@@ -65,7 +70,7 @@ __HTML_ATTRIBUTES = {
     'select': ('name', 'value', 'size', ),
     'textarea': ('name', 'rows', 'cols', 'readonly', ),
     'link': ('type', 'rel', 'href', 'media', 'charset', ),
-    'meta': ('content', 'http-equiv', 'name', 'property', ),
+    'meta': ('content', 'http-equiv', 'name', 'property', 'charset', ),
     'script': ('type', 'src', 'language', 'charset', ),
     'style': ('type', 'media', ),
     'td': ('colspan', 'rowspan', ),
@@ -101,7 +106,7 @@ __HTML_STATES = {
     'root' : State(
             # conditional comments
             State.Transition(r'<!(--)?\[if', (StartToken('html-start-conditional-comment'), Record(), Shift(), Push('conditional-comment'), )),
-            State.Transition(r'<!(--)?\[endif\](--)?>', (StartToken('html-end-conditional-comment'), Record(), Shift(), StopToken(), )),
+            State.Transition(r'<!(--)?(<!)?\[endif\](--)?>', (StartToken('html-end-conditional-comment'), Record(), Shift(), StopToken(), )),
             State.Transition(r'<!\[CDATA\[', (StartToken('html-cdata'), Shift(), Push('cdata'), )),
 
             # XML doctype
@@ -126,7 +131,7 @@ __HTML_STATES = {
             ),
     'conditional-comment': State(
             State.Transition(r'[\s\w()!|&]+', (Record(), Shift(), )),
-            State.Transition(r'\](--)?>', (Record(), Shift(), Pop(), StopToken(), )),
+            State.Transition(r'\](--)?>(\s*<!-->)?', (Record(), Shift(), Pop(), StopToken(), )),
             State.Transition(r'.|\s', (Error('Parse error in Conditional Comment'), )),
             ),
     'comment': State(
@@ -806,6 +811,7 @@ def _ensure_type_in_scripts(tree):
     for tag in tree.child_nodes_of_class(HtmlTag):
         if tag.html_tagname == 'script':
             type_ = tag.html_attributes.get('type', None)
+
             if not bool(type_) or not type_.output_as_string() == u'"text/javascript"':
                 raise CompileException(tag, '<script> should have type="text/javascript"')
 
@@ -817,6 +823,7 @@ def _ensure_type_in_css(tree):
     for tag in tree.child_nodes_of_class(HtmlTag):
         if tag.html_tagname == 'style':
             type_ = tag.html_attributes.get('type', None)
+
             if not bool(type_) or not type_.output_as_string() == u'"text/css"':
                 raise CompileException(tag, '<style> should have type="text/css"')
 
@@ -915,7 +922,7 @@ def _check_no_block_level_html_in_inline_html(tree, options):
                 if inline_tag and c.__class__.html_tagname in __HTML_BLOCK_LEVEL_ELEMENTS:
                     raise CompileException(c, 'Improper nesting of HTML tags. Block level <%s> node should not appear inside inline <%s> node.' % (c.__class__.html_tagname, inline_tag))
 
-                if c.__class__.html_tagname in __HTML_INLINE_LEVEL_ELEMENTS:
+                if c.__class__.html_tagname in __HTML4_INLINE_LEVEL_ELEMENTS:
                     check(c, c.__class__.html_tagname)
                 elif c.__class__.html_tagname in __HTML_INLINE_BLOCK_ELEMENTS:
                     # This are block level tags, but can only contain inline level elements,
@@ -1276,8 +1283,12 @@ def _process_html_tree(tree, context):
     if options.validate_html:
         # Methods to execute before nesting everything
         _validate_html_tags(tree)
-        _ensure_type_in_scripts(tree)
-        _ensure_type_in_css(tree)
+
+        # TODO: following two checks are not necsesary in HTML5,
+        #       -> create a HTML5 option instead.
+        #_ensure_type_in_scripts(tree)
+        #_ensure_type_in_css(tree)
+
         _validate_html_attributes(tree)
         _ensure_href_in_hyperlinks(tree)
         _ensure_alt_attribute(tree)
