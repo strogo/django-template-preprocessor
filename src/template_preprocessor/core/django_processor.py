@@ -981,17 +981,17 @@ def _preprocess_trans_tags(tree):
             for v in translation_info.variables:
                 if convert_var(v) in string:
                     string = string.replace(convert_var(v), '{{%s}}' % v)
-                else:
-                    raise CompileException(trans,
-                            'Could not find variable "%s" in {%% blocktrans %%} "%s" after translating.' % (v, string))
+                #else:
+                #    raise CompileException(trans,
+                #            'Could not find variable "%s" in {%% blocktrans %%} "%s" after translating.' % (v, string))
 
             if translation_info.has_plural:
                 for v in translation_info.plural_variables:
                     if convert_var(v) in plural_string:
                         plural_string = plural_string.replace(convert_var(v), '{{%s}}' % v)
-                    else:
-                        raise CompileException(trans,
-                                'Could not find variable "%s" in {%% blocktrans %%} "%s" after translating.' % (v, plural_string))
+                #    else:
+                #        raise CompileException(trans,
+                #                'Could not find variable "%s" in {%% blocktrans %%} "%s" after translating.' % (v, plural_string))
 
             # Wrap in {% if test %} for plural checking and in {% with test for passing parameters %}
             if translation_info.has_plural:
