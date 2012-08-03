@@ -135,6 +135,7 @@ class Options(object):
         self.pack_external_css = False
         self.validate_html = True
         self.disallow_orphan_blocks = False # An error will be raised when a block has been defined, which is not present in the parent.
+        self.disallow_block_level_elements_in_inline_level_elements = False
 
     def change(self, value, node=None):
         """
@@ -160,6 +161,7 @@ class Options(object):
             'pack-external-javascript': ('pack_external_javascript', True),
             'validate-html': ('validate_html', True),
             'whitespace-compression': ('whitespace_compression', True),
+            'no-block-level-elements-in-inline-level-elements': ('disallow_block_level_elements_in_inline_level_elements', True),
         }
 
         if value in actions:

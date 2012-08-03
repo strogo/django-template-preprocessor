@@ -1307,7 +1307,9 @@ def _process_html_tree(tree, context):
         _nest_all_elements(tree)
 
         # Validate nesting.
-        _check_no_block_level_html_in_inline_html(tree, options)
+        if options.disallow_block_level_elements_in_inline_level_elements:
+            _check_no_block_level_html_in_inline_html(tree, options)
+
         _check_for_unmatched_closing_html_tags(tree)
 
     # Turn comments into content, when they appear inside JS/CSS and remove all other comments
