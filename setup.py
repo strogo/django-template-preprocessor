@@ -1,8 +1,23 @@
+import re
 from setuptools import setup
 import os
 
 absolute_path = lambda x: os.path.join(os.path.dirname(__file__), x) 
 readme_path = absolute_path(u'README.rst')
+
+def parse_requirements(file_name):
+    requirements = []
+    for line in open(file_name, 'r').read().split('\n'):
+        if re.match(r'(\s*#)|(\s*$)', line):
+            continue
+        if re.match(r'\s*-e\s+', line):
+            requirements.append(re.sub(r'\s*-e\s+.*#egg=(.*)$', r'\1', line))
+        elif re.match(r'\s*-f\s+', line):
+            pass
+        else:
+            requirements.append(line)
+
+    return requirements
 
 setup(
     name = "django-template-preprocessor",
@@ -19,6 +34,7 @@ setup(
         'static/*/js/*.js', 'static/*/css/*.css',
         ],},
     include_package_data=True,
+    install_requires = parse_requirements('requirements.txt'),
     zip_safe=False, # Don't create egg files, Django cannot find templates in egg files.
     classifiers = [
         'Development Status :: 4 - Beta',
