@@ -1,4 +1,8 @@
-from setuptools import setup, find_packages
+from setuptools import setup
+import os
+
+absolute_path = lambda x: os.path.join(os.path.dirname(__file__), x) 
+readme_path = absolute_path(u'README.rst')
 
 setup(
     name = "django-template-preprocessor",
@@ -6,7 +10,7 @@ setup(
     url = 'https://github.com/citylive/django-template-preprocessor',
     license = 'BSD',
     description = "Template preprocessor/compiler for Django",
-    long_description = open('README.rst','r').read(),
+    long_description = open(readme_path, 'r').read(),
     author = 'Jonathan Slenders, City Live nv',
     packages = ['template_preprocessor'], #find_packages('src', exclude=['*.test_project', 'test_project', 'test_project.*', '*.test_project.*']),
     package_dir = {'': 'src'},
