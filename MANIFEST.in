@@ -1,2 +1,2 @@
-include README.rst
+include README.rst requirements.txt
 recursive-include src/template_preprocessor *.py *.js *.css
