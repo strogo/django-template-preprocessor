@@ -19,3 +19,24 @@ class TestSimpleTemplateInheritance(TestCase):
         compiled = compile_source('{% extends "inheritance/inherit-from-template-dirs.html" %}').strip()
         self.assertEqual(compiled, 'BASE TEMPLATE')
 
+
+class TestSimpleTemplateInheritanceWithBlocks(TestCase):
+    
+    def test_should_expand_block_from_base_template(self):
+        template = '{% extends "blocks/base.html" %}'
+        compiled = compile_source(template).strip()
+        self.assertEqual(compiled, 'BASE BLOCK')
+
+    def test_should_keep_overriden_block(self):
+        template = '{% extends "blocks/base.html" %}{% block base_block %}OVERRIDEN{% endblock %}'
+        compiled = compile_source(template).strip()
+        self.assertEqual(compiled, 'OVERRIDEN')
+
+    def test_should_keep_overriden_block_plus_super(self):
+        template = '''
+            {% extends "blocks/base.html" %}
+            {% block base_block %}{{ block.super }} + OVERRIDEN{% endblock %}
+        '''
+        compiled = compile_source(template).strip()
+        self.assertEqual(compiled, 'BASE BLOCK + OVERRIDEN')
+
