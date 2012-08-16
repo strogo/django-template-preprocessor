@@ -8,6 +8,13 @@ TEMPLATE_DEBUG = DEBUG
 ADMINS = ()
 MANAGERS = ADMINS
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'test_project.sqlite',
+    },
+}
+
 TIME_ZONE = 'America/Chicago'
 
 PROJECT_DIR = os.path.dirname(__file__) + '/'
@@ -46,7 +53,6 @@ SECRET_KEY = '7wq0^b4+mx39f%ly5ty#4nk9pwdkh%63u1!_h-x@%!hos3f9%b'
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -62,4 +68,5 @@ TEMPLATE_DIRS = (
 INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'template_preprocessor',
+    'testapp',
 )
