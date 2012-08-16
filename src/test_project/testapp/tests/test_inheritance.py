@@ -15,3 +15,7 @@ class TestSimpleTemplateInheritance(TestCase):
         compiled = compile_source('{% extends "inheritance/level-two.html" %}').strip()
         self.assertEqual(compiled, 'BASE TEMPLATE')
 
+    def test_should_expand_app_template_inheriting_from_template_dirs(self):
+        compiled = compile_source('{% extends "inheritance/inherit-from-template-dirs.html" %}').strip()
+        self.assertEqual(compiled, 'BASE TEMPLATE')
+
