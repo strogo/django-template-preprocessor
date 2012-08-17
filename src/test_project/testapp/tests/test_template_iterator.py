@@ -1,6 +1,6 @@
 
 import os
-from unittest import TestCase
+from django.utils.unittest import TestCase
 from django.conf import settings
 from template_preprocessor.utils import template_iterator
 
