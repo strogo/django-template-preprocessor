@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
+from template_preprocessor.core.lexer import CompileException
 
 from test_project.helpers import compile_source
 
@@ -39,4 +40,8 @@ class TestSimpleTemplateInheritanceWithBlocks(TestCase):
         '''
         compiled = compile_source(template).strip()
         self.assertEqual(compiled, 'BASE BLOCK + OVERRIDEN')
+
+    def test_extends_template_with_dynamic_variable_should_return_an_exception(self):
+        template = '{% extends dynamic_template %}'
+        self.assertRaises(CompileException, compile_source, template)
 
