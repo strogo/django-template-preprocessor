@@ -69,4 +69,5 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'template_preprocessor',
     'testapp',
+    'otherapp',
 )
