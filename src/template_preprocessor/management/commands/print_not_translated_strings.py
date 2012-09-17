@@ -22,7 +22,8 @@ from template_preprocessor.core.context import Context
 
 
 class Command(BaseCommand):
-    help = "Preprocess all the templates form all known applications."
+    help = "Print an overview of all the strings in the templates which lack {% trans %} blocks around them."
+
     option_list = BaseCommand.option_list + (
         make_option('--single-template', action='append', dest='single_template', help='Compile only this template'),
         make_option('--boring', action='store_true', dest='boring', help='No colors in output'),
