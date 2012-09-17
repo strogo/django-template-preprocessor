@@ -7,18 +7,14 @@ import string
 from optparse import make_option
 import termcolor
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.core.urlresolvers import reverse
 from django.template import TemplateDoesNotExist
 
 from template_preprocessor.core import compile_to_parse_tree
 from template_preprocessor.core.lexer import CompileException
 
-from template_preprocessor.utils import language, template_iterator, load_template_source, get_template_path
-from template_preprocessor.utils import get_options_for_path, execute_precompile_command
-from template_preprocessor.core.utils import need_to_be_recompiled, create_media_output_path
-from template_preprocessor.core.context import Context
+from template_preprocessor.utils import template_iterator, load_template_source
+from template_preprocessor.utils import get_options_for_path
 
 
 class Command(BaseCommand):
