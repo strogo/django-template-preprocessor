@@ -41,6 +41,7 @@ def template_iterator():
     Iterate through all templates of all installed apps.
     (Except EXCLUDED_APPS)
     """
+    visited_templates = []
     def walk(directory):
         for root, dirs, files in os.walk(directory):
             for f in files:
@@ -48,14 +49,21 @@ def template_iterator():
                     if f.endswith('.html'):
                         yield os.path.relpath(os.path.join(root, f), directory)
 
+
     for dir in settings.TEMPLATE_DIRS:
         for f in walk(dir):
+            if f in visited_templates:
+                continue
+            visited_templates.append(f)
             yield dir, f
 
     for app in settings.INSTALLED_APPS:
         if app not in EXCLUDED_APPS:
             dir = os.path.join(_get_path_form_app(app), 'templates')
             for f in walk(dir):
+                if f in visited_templates:
+                    continue
+                visited_templates.append(f)
                 yield dir, f
 
 def get_template_path(template):

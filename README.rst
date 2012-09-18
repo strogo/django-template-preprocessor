@@ -2,6 +2,8 @@
 Template Preprocessor Readme
 ===========================================================
 
+.. image::  https://secure.travis-ci.org/petry/django-template-preprocessor.png?branch=master
+
 Author
   Jonathan Slenders, City Live nv
 
