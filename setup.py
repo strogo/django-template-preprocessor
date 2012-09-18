@@ -2,7 +2,7 @@ import re
 from setuptools import setup
 import os
 
-absolute_path = lambda x: os.path.join(os.path.dirname(__file__), x) 
+absolute_path = lambda x: os.path.join(os.path.dirname(__file__), x)
 readme_path = absolute_path(u'README.rst')
 
 def parse_requirements(file_name):
@@ -21,7 +21,7 @@ def parse_requirements(file_name):
 
 setup(
     name = "django-template-preprocessor",
-    version='1.2.28',
+    version='1.2.29',
     url = 'https://github.com/citylive/django-template-preprocessor',
     license = 'BSD',
     description = "Template preprocessor/compiler for Django",

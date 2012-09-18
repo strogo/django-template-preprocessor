@@ -31,7 +31,7 @@ __HTML4_INLINE_LEVEL_ELEMENTS = ('address', 'span', 'a', 'b', 'i', 'em', 'del', 
 
 # HTML 5 tags
 __HTML5_BLOCK_LEVEL_ELEMENTS = ( 'article', 'aside', 'canvas', 'figcaption', 'figure', 'footer', 'header', 'hgroup', 'output', 'progress', 'section', 'video', )
-__HTML5_INLINE_LEVEL_ELEMENTS = ('audio', 'details', 'command', 'datalist', 'mark', 'meter', 'nav', 'source', 'summary', 'time', 'samp', )
+__HTML5_INLINE_LEVEL_ELEMENTS = ('audio', 'details', 'command', 'datalist', 'mark', 'meter', 'nav', 'source', 'summary', 'time', 'samp', 'cite' )
 
 # All HTML tags
 __HTML_BLOCK_LEVEL_ELEMENTS = __HTML4_BLOCK_LEVEL_ELEMENTS + __HTML5_BLOCK_LEVEL_ELEMENTS
@@ -67,7 +67,7 @@ __HTML_ATTRIBUTES = {
     'body': ('onLoad', ),
     'img': ('src', 'alt', 'height', 'width', ),
     'input': ('type', 'name', 'value', 'maxlength', 'checked', 'disabled', 'src', 'size', 'readonly', 'autocomplete', 'placeholder' ),
-    'select': ('name', 'value', 'size', ),
+    'select': ('name', 'value', 'size', 'disabled', ),
     'textarea': ('name', 'rows', 'cols', 'readonly', 'placeholder', ),
     'link': ('type', 'rel', 'href', 'media', 'charset', 'sizes', ),
     'meta': ('content', 'http-equiv', 'name', 'property', 'charset', 'itemprop', ),
