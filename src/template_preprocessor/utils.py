@@ -96,11 +96,11 @@ def get_options_for_path(path):
     return a list of default settings for this template.
     (find app, and return settings for the matching app.)
     """
-    result = []
+    result = get_options_for_everyone()
     for app in settings.INSTALLED_APPS:
         dir = os.path.normpath(os.path.join(_get_path_form_app(app), 'templates')).lower()
         if os.path.normpath(path).lower().startswith(dir):
-            result = get_options_for_app(app)
+            result += get_options_for_app(app)
 
         # NOTE: somehow, we get lowercase paths from the template origin in
         # Windows, so convert both paths to lowercase before comparing.
@@ -109,6 +109,26 @@ def get_options_for_path(path):
     # (Can still be overriden in the templates.)
     if path and not path.endswith('.html'):
         result = list(result) + ['no-html']
+
+    return result
+
+def get_options_for_everyone():
+    """
+    return a list of default settings valid for all applications.
+
+    -- settings.py --
+    TEMPLATE_PREPROCESSOR_OPTIONS = {
+            # Default
+            '*', ('html',),
+    }
+    """
+    # Read settings.py
+    options = getattr(settings, 'TEMPLATE_PREPROCESSOR_OPTIONS', { })
+    result = []
+
+    # Possible fallback: '*'
+    if '*' in options:
+        result += list(options['*'])
 
     return result
 
@@ -129,10 +149,6 @@ def get_options_for_app(app):
     # Read settings.py
     options = getattr(settings, 'TEMPLATE_PREPROCESSOR_OPTIONS', { })
     result = []
-
-    # Possible fallback: '*'
-    if '*' in options:
-        result += list(options['*'])
 
     # Look for any configuration entry which contains this appname
     for k, v in options.iteritems():
