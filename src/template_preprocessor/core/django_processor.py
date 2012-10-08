@@ -653,7 +653,6 @@ __DJANGO_BLOCK_ELEMENTS = {
     'blocktrans': ('endblocktrans', DjangoBlocktransTag),
     'macro': ('endmacro', DjangoMacroTag),
     'decorate': ('enddecorate', DjangoDecorateTag),
-    'compress': ('endcompress', DjangoCompressTag),
     '!raw': ('!endraw', DjangoRawOutput),
 
     'if': ('else', 'endif', DjangoIfTag),
@@ -1088,6 +1087,8 @@ def parse(source_code, path, context, main_template=False):
     - main_template: False for includes/extended templates. True for the
                      original path that was called.
     """
+    options = context.options
+
     # To start, create the root node of a tree.
     tree = Token(name='root', line=1, column=1, path=path)
     tree.children = [ source_code ]
@@ -1100,6 +1101,10 @@ def parse(source_code, path, context, main_template=False):
 
     # Phase II: process inline tags
     _process_inline_tags(tree)
+
+    if options.is_html:
+        # {% compress %} tag should only be handled if we're parsing html
+        __DJANGO_BLOCK_ELEMENTS['compress'] = ('endcompress', DjangoCompressTag)
 
     # Phase III: create recursive structure for block level tags.
     nest_block_level_elements(tree, __DJANGO_BLOCK_ELEMENTS, DjangoTag, lambda c: c.tagname)
@@ -1120,7 +1125,6 @@ def parse(source_code, path, context, main_template=False):
     if main_template:
 
         _update_preprocess_settings(tree, context)
-        options = context.options
 
         # Remember translations in context (form PO-file generation)
         remember_gettext_entries(tree, context)
