@@ -15,16 +15,16 @@ class HelperLoader(BaseLoader):
     def __init__(self, loaders=settings.TEMPLATE_LOADERS):
         super(HelperLoader, self).__init__(loaders=loaders)
 
-    def compile_template(self, original_source, template_dirs=None):
+    def compile_template(self, original_source, template_dirs=None, options=None):
         template_source, context = compile(
             original_source,
             loader = lambda path: self.find_template(path)[0],
-            options=self.options,
+            options=options or self.options,
             context_class=self.context_class
         )
 
         return template_source
 
 
-def compile_source(source):
-    return HelperLoader().compile_template(source)
+def compile_source(source, options=None):
+    return HelperLoader().compile_template(source, options=options)

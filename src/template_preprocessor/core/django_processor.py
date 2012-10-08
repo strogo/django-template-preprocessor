@@ -1105,6 +1105,8 @@ def parse(source_code, path, context, main_template=False):
     if options.is_html:
         # {% compress %} tag should only be handled if we're parsing html
         __DJANGO_BLOCK_ELEMENTS['compress'] = ('endcompress', DjangoCompressTag)
+    else:
+        __DJANGO_BLOCK_ELEMENTS.pop('compress', None)
 
     # Phase III: create recursive structure for block level tags.
     nest_block_level_elements(tree, __DJANGO_BLOCK_ELEMENTS, DjangoTag, lambda c: c.tagname)
