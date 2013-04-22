@@ -94,8 +94,13 @@ class PreprocessedLoader(_Base):
             else:
                 template, origin = self.find_template(template_name, template_dirs)
 
-                # Compile template (we shouldn't compile anything at runtime.)
-                #template, context = compile(template, loader = lambda path: self.find_template(path)[0], path=template_name)
+                # Compile template
+                template, context = compile(
+                    template,
+                    loader=lambda path: self.find_template(path)[0],
+                    path=template_name,
+                    options=get_options_for_path(origin.name)
+                )
 
             # Turn into Template object
             template = get_template_from_string(template, origin, template_name)
@@ -105,7 +110,6 @@ class PreprocessedLoader(_Base):
 
         # Return result
         return self.template_cache[key], None
-
 
     def reset(self):
         "Empty the template cache."
