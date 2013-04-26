@@ -10,6 +10,7 @@ from django.utils import translation
 from django.utils.hashcompat import sha_constructor
 from django.utils.importlib import import_module
 from django.template import StringOrigin
+from django.template.loader import LoaderOrigin
 
 from template_preprocessor.core import compile
 from template_preprocessor.core.context import Context
@@ -57,7 +58,8 @@ class _Base(BaseLoader):
         for loader in self.loaders:
             try:
                 template, display_name = loader.load_template_source(name, dirs)
-                return (template, make_origin(display_name, loader.load_template_source, name, dirs))
+                origin = LoaderOrigin(display_name, loader.load_template_source, name, dirs)
+                return (template, origin)
             except TemplateDoesNotExist, e:
                 pass
             except NotImplementedError, e:
